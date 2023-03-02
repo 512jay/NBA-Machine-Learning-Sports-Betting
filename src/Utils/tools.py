@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+from .Dictionaries import team_index_current
 
 games_header = {
     'user-agent': 'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -15,18 +16,21 @@ data_headers = {
     'Accept': 'application/json, text/plain, */*',
     'Accept-Encoding': 'gzip, deflate, br',
     'Host': 'stats.nba.com',
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.4 Safari/605.1.15',
-    'Accept-Language': 'en-us',
-    'Referer': 'https://stats.nba.com/teams/traditional/?sort=W_PCT&dir=-1&Season=2019-20&SeasonType=Regular%20Season',
-    'Connection': 'keep-alive',
-    'x-nba-stats-origin': 'stats',
-    'x-nba-stats-token': 'true'
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Referer': 'https://www.nba.com/',
+    'Connection': 'keep-alive'
 }
+
 
 
 def get_json_data(url):
     raw_data = requests.get(url, headers=data_headers)
-    json = raw_data.json()
+    try:
+        json = raw_data.json()
+    except Exception as e:
+        print(e)
+        return {}
     return json.get('resultSets')
 
 
@@ -37,7 +41,11 @@ def get_todays_games_json(url):
 
 
 def to_data_frame(data):
-    data_list = data[0]
+    try:
+        data_list = data[0]
+    except Exception as e:
+        print(e)
+        return pd.DataFrame(data={})
     return pd.DataFrame(data=data_list.get('rowSet'), columns=data_list.get('headers'))
 
 
@@ -56,5 +64,7 @@ def create_todays_games_from_odds(input_dict):
     games = []
     for game in input_dict.keys():
         home_team, away_team = game.split(":")
+        if home_team not in team_index_current or away_team not in team_index_current:
+            continue
         games.append([home_team, away_team])
     return games
